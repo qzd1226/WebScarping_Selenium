@@ -30,13 +30,17 @@ def get_href():
         page_end = re.sub("\D", "", page_end)
         print(page_end)
     except:
-        page_end = 1
-    page_end = min('10',page_end)
-    for i in range(int(page_end)):
-        # for i in range(1):
+        page_end = '1'
+    page_end = min('5',page_end)
+    cur_url = driver.current_url
+    for i in range(1,min(int(int(page_end)/2), 5) + 1):
         print("Collecting data: page {} of {}".format(i + 1, page_end))
+        page_url = cur_url + '&page=' + str(i)
+        print(page_url)
+        goto_page(page_url)
         for title in driver.find_elements(By.CLASS_NAME,"docsum-content"):
             href = title.find_element(By.CSS_SELECTOR,'a').get_attribute('href')
+            print(href)
             href_list.append(href)
         try:
             driver.find_element_by_class_name("next").click()
@@ -45,7 +49,7 @@ def get_href():
     return (href_list)
 
 
-def extract_data():
+def extract_data(drive):
     """Gets title, authors and abstract from individual result pages"""
     title = driver.find_element(By.XPATH,"//meta[@property = 'og:title']").get_attribute("content")
     authors = driver.find_element(By.XPATH,"//meta[@name = 'keywords']").get_attribute("content")
@@ -70,7 +74,13 @@ def extract_data():
     #freelabel = "stop"
     if(freelabel == "Free PMC article"):
         try:
+            option = webdriver.ChromeOptions()
+            option.add_argument('--headless')
+            driver2 = webdriver.Chrome("/Users/williamlast/PycharmProjects/WebScarping_Pubmed/chromedriver",
+                                      chrome_options=option)
             original_window = driver.current_window_handle
+            print("original_window:")
+            print(original_window)
             curherf = driver.find_element(By.CLASS_NAME,"pmc").get_attribute('href')
             # 在新的标签页打开链接
             driver.execute_script(f'window.open("{curherf}", "_blank");')
@@ -78,9 +88,11 @@ def extract_data():
             driver.switch_to.window(driver.window_handles[-1])
             rand = random.randint(0, 5)
             time.sleep(rand)
+            print("new window")
             # 单独处理
             try:
                 pdflink = driver.find_element(By.CLASS_NAME,"int-view").get_attribute("href")
+                print("pdf_link:")
                 print(pdflink)
             except:
                 pass
@@ -115,7 +127,7 @@ if __name__ == "__main__":
                  'cardiovasular heart','digestive','endocrine','sensory system','immune and hematology',
                  'lymphatic','muscular system','skeletal system bones','nervous system brain','reproductive system',
                  'respiratory system lungs','integumentary system skin','urinary system','Performance','Physical',
-                 'mental','stress','happiness','depression','genomic instabilitry','telomere attrition','epigenetic alteration',
+                 'mental','stress','happiness','depression','genomic instability','telomere attrition','epigenetic alteration',
                  'loss of proteostasis','deregulated nutrient sensing','mitochondrial dysfunction','cellular senescence',
                  'stem cell exhaustion','altered intercellular communication']
     independentAll = ['fasting','intermittent fasting','meat','fish','vegetable','fruit','legumes','grains',
@@ -134,19 +146,27 @@ if __name__ == "__main__":
                    'NMN','NR','Calcium AKG','Alpha lipoic acid','fisetin','quercetin','PQQ','collagen peptides',
                    'hyalauronic acid','chlorella','spirulina','resveratrol','CoQ10','probioltics','melatonin','Acetyl-L-carnitine',
                    'olive oil','lutein','milk thistle','spermidine','creatine','trimethyl glycine']
-    independent = ['meat']
-    dependent = ['Biological systems',
-                 'cardiovasular heart','digestive','endocrine','sensory system','immune and hematology',
-                 'lymphatic','muscular system','skeletal system bones','nervous system brain','reproductive system',
-                 'respiratory system lungs','integumentary system skin','urinary system','Performance','Physical',
-                 'mental','stress','happiness','depression','genomic instabilitry','telomere attrition','epigenetic alteration',
-                 'loss of proteostasis','deregulated nutrient sensing','mitochondrial dysfunction','cellular senescence',
-                 'stem cell exhaustion','altered intercellular communication']
+    independent = ['saturated fat','refined sugars'] # ,'fasting','fish'
+    used = ['lifespan','all-cause mortality','Disease''weight BMI','cardiovasular','digestive','sensory system','immune and hematology',
+                 'lymphatic','muscular system','skeletal system bones','nervous system brain','reproductive system','respiratory system lungs',
+            'integumentary system skin', 'urinary system', 'Physical',
+            'mental', 'stress', 'happiness', 'depression', 'genomic instability'
+            ]
+    dependent = ['lifespan','all-cause mortality','Disease''weight BMI','cardiovasular','digestive','sensory system','immune and hematology',
+                 'lymphatic','muscular system','skeletal system bones','nervous system brain','reproductive system','respiratory system lungs',
+            'integumentary system skin', 'urinary system', 'Physical',
+            'mental', 'stress', 'happiness', 'depression', 'genomic instability','epigenetic alteration','mitochondrial dysfunction','cellular senescence',
+                 'stem cell exhaustion','altered intercellular communication','mitochondrial dysfunction','cellular senescence']
+    unused = ['epigenetic alteration','mitochondrial dysfunction','cellular senescence',
+                 'stem cell exhaustion','altered intercellular communication','mitochondrial dysfunction','cellular senescence']
+    dependent0 = ['lifespan']
     for inde in independent:
         for dep in dependent:
             query = inde + ' ' + dep
             print("Connecting to Pubmed")
-            driver = webdriver.Chrome("/Users/williamlast/PycharmProjects/WebScarping_Pubmed/chromedriver")
+            option = webdriver.ChromeOptions()
+            option.add_argument('--headless')
+            driver = webdriver.Chrome("/Users/williamlast/PycharmProjects/WebScarping_Pubmed/chromedriver",chrome_options= option)
             driver.get("https://pubmed.ncbi.nlm.nih.gov/")
             print("Starting Query:")
             print(query)
@@ -155,13 +175,16 @@ if __name__ == "__main__":
             # retrieve href and title from all results
             href_list = []
             href_list = get_href()
-            # extract title, author and abstract for each result.
+            # extract title, author and abstract for each result.dfs(root.right,target);
             full_data_list = []
             print("Extracting abstracts!, this might take a while.")
             num = 1
             for url in href_list:
                 goto_page(url)
-                full_data_list.append(extract_data())
+                try:
+                    full_data_list.append(extract_data(driver))
+                except:
+                    pass
             driver.close()
             filename = query + ".csv"
             print("Writing To file: {}".format(filename))

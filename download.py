@@ -1,5 +1,10 @@
 import io
 import requests
+
+import os
+
+
+
 def download_pdf(save_path,pdf_name,pdf_url):
     send_headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36",
